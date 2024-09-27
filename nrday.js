@@ -158,6 +158,14 @@ class DateHandler {
             case 'today': return now;
             case 'tomorrow': return now.add(1, 'day');
             case 'yesterday': return now.subtract(1, 'day');
+			case 'next week': return now.add(1, 'week');
+			case 'last week': return now.subtract(1, 'week');
+			case 'next month': return now.add(1, 'month');
+			case 'last month': return now.subtract(1, 'month');
+			case 'next minute': return now.add(1, 'minute');
+			case 'last minute': return now.subtract(1, 'minute');
+			case 'next hour': return now.add(1, 'hour');
+			case 'last hour': return now.subtract(1, 'hour');
             // Add more hack keywords as needed
             default:
                 console.log("[applyHackOrParse] Attempting to parse input with format:", this.inputFormat);

@@ -1,0 +1,161 @@
+<script type="text/html" data-template-name="nrday">
+    <div class="form-row">
+        <label for="node-input-input"><i class="fa fa-arrow-left"></i> Input from</label>
+        <input type="text" id="node-input-input" style="width: 70%;" placeholder="payload">
+        <input type="hidden" id="node-input-inputType">
+    </div>
+    <div class="form-row">
+        <label for="node-input-inTz">Input Timezone</label>
+        <input type="text" id="node-input-inTz" placeholder="[determined by system]" style="width:70%;">
+    </div>
+    <!-- Input Format Field -->
+    <div class="form-row">
+        <label for="node-input-inputFormat">Input Format</label>
+        <input type="text" id="node-input-inputFormat" placeholder="e.g., DD/MM/YYYY" style="width:70%;">
+    </div>
+    <div class="form-row">
+        <label for="node-input-adjAmount"> Adjustment</label>
+        <select id="node-input-adjDir" style="width:4em">
+          <option value="add">+</option>
+          <option value="subtract">-</option>
+        </select>
+        <input type="text" id="node-input-adjAmount" placeholder="0" style="width:25%;">
+        <select id="node-input-adjType" style="width:30%">
+            <option value="days">Days</option>
+            <option value="weeks">Weeks</option>
+            <option value="months">Months</option>
+            <option value="quarters">Quarters</option>
+            <option value="years">Years</option>
+            <option disabled>──────────</option>
+            <option value="milliseconds">Milliseconds</option>
+            <option value="seconds">Seconds</option>
+            <option value="minutes">Minutes</option>
+            <option value="hours">Hours</option>
+        </select>
+    </div>
+    <br />
+    <!-- Using Format instead of Output Format -->
+    <div class="form-row">
+        <label for="node-input-format"><i class="fa fa-eye-open"></i> Format</label>
+        <input type="text" id="node-input-format" placeholder="ISO8601 or Custom (e.g., YYYY-MM-DD HH:mm:ss)">
+    </div>
+    <div class="form-row">
+        <label for="node-input-locale"><i class="fa fa-flag"></i> Locale</label>
+        <input type="text" id="node-input-locale" placeholder="en">
+    </div>
+    <div class="form-row">
+        <label for="node-input-outTz">Output Timezone</label>
+        <input type="text" id="node-input-outTz" placeholder="[determined by system]" style="width:70%;">
+    </div>
+    <div class="form-row">
+        <label for="node-input-output"><i class="fa fa-arrow-right"></i> Output to</label>
+        <input type="text" id="node-input-output" style="width: 70%;" placeholder="payload">
+        <input type="hidden" id="node-input-outputType">
+    </div>
+    <br/>
+    <div class="form-row">
+        <label for="node-input-topic"><i class="fa fa-tasks"></i> Topic</label>
+        <input type="text" id="node-input-topic" placeholder="Topic">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-tips" style="font-size:83%">
+        See the info sidebar for formatting details. <br />
+        Use locale and format to change string output.<br />
+        See the info sidebar for several warnings about inputting strings.
+    </div>
+</script>
+
+<script type="text/javascript">
+;(function () {
+    'use strict';
+
+    const moduleName = 'nrday';
+    const nodeLabel = 'Date/Time Formater with day.js';
+    const paletteCategory = 'formats';
+    const paletteColor = '#E6E0F8';
+
+    const tzValidate = val => true;
+
+    RED.nodes.registerType(moduleName, {
+        category: paletteCategory,
+        color: paletteColor,
+        defaults: {
+            name: { value: '' },
+            topic: { value: '' },
+            input: { value: '' },
+            inputType: { value: 'msg' },
+            inTz: { value: '', validate: tzValidate },
+            inputFormat: { value: '' },
+            adjAmount: { value: 0, validate: RED.validators.number() },
+            adjType: { value: 'days' },
+            adjDir: { value: 'add' },
+            format: { value: 'iso8601' }, // default to ISO8601
+            locale: { value: '' },
+            output: { value: '' },
+            outputType: { value: 'msg' },
+            outTz: { value: '', validate: tzValidate }
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: 'timer.png',
+        paletteLabel: nodeLabel,
+        label() {
+            return this.name || this.topic || nodeLabel;
+        },
+        labelStyle() {
+            return this.name ? 'node_label_italic' : '';
+        },
+	oneditprepare: async function () {
+		const _this = this;
+
+		// Configuration des typedInput pour les champs input et output
+		const setupTypedInput = (id, defaultType, types) => {
+			$(id).typedInput({
+				default: defaultType,
+				types,
+				typeField: $(`${id}Type`)
+			});
+		};
+
+		setupTypedInput('#node-input-input', 'msg', ['msg', 'flow', 'global', 'date', 'str']);
+		setupTypedInput('#node-input-output', 'msg', ['msg', 'flow', 'global']);
+
+		// Fonction pour récupérer la locale et le fuseau horaire via l'API
+		const fetchLocaleAndTimezone = () => {
+			return $.getJSON('/contribapi/nrday')
+				.then(data => {
+					return {
+						locale: data.locale || 'en', // Utilise la locale renvoyée par l'API ou 'en' par défaut
+						tz: data.tz || Intl.DateTimeFormat().resolvedOptions().timeZone
+					};
+				})
+				.catch(err => {
+					console.warn("Failed to fetch locale/timezone from API", err);
+					return {
+						locale: dayjs.locale() || 'en',
+						tz: Intl.DateTimeFormat().resolvedOptions().timeZone
+					};
+				});
+		};
+
+		// Récupérer la locale et le fuseau horaire via l'API
+		const { locale, tz } = await fetchLocaleAndTimezone();
+
+		$('#node-input-inTz').val(_this.inTz || tz);
+		$('#node-input-outTz').val(_this.outTz || tz);
+		$('#node-input-locale').val(_this.locale || locale);
+		$('#node-input-inputFormat').val(_this.inputFormat || 'YYYY-MM-DD');
+		$('#node-input-format').val(_this.format || 'iso8601');
+	},
+        oneditsave: function () {
+            const _this = this;
+
+            _this.inputFormat = $('#node-input-inputFormat').val();
+            _this.format = $('#node-input-format').val(); // Save the format field
+        }
+    });
+})();
+</script>

@@ -1,0 +1,26 @@
+{
+  "name": "@fdecourt/node-red-contrib-nrday",
+  "version": "0.0.1",
+  "description": "A Node-RED node to manipulate dates using day.js",
+  "main": "nrday.js",
+  "keywords": [
+    "node-red",
+    "date",
+    "dayjs",
+    "day.js",
+    "time",
+    "timezone"
+  ],
+  "node-red": {
+    "nodes": {
+      "dayjs": "nrday.js"
+    }
+  },
+  "author": "fdecourt",
+  "license": "MIT",
+  "dependencies": {
+    "dayjs": "latest",
+    "dayjs-plugin-utc": "latest",
+    "dayjs-ext": "latest"
+  }
+}
